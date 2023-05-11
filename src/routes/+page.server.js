@@ -52,14 +52,14 @@ export const actions = {
             sourceFile: `./files/${fileName}.xls`
         });
 
-        console.log(json.Results)
+        // console.log(json.Sheet1)
 
         client.on('ready', () => {
             console.log('Client is ready!');
-            json.Results.forEach((item, index) => {
+            json.Sheet1.forEach((item, index) => {
                 const chatId = item.A.toString().substring(0) + "@c.us";
-                console.log(chatId + ' ' + msg)
                 client.sendMessage(chatId, msg);
+                console.log(chatId + ' ' + msg)
             });
             fs.unlink(`./files/${fileName}.xls`, (err) => {
                 if (err) throw err //handle your error the way you want to;
