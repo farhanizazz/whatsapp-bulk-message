@@ -2,7 +2,7 @@ import fs from 'fs';
 import { writeFile } from 'fs/promises';
 import util from 'util';
 import excelToJson from 'convert-excel-to-json';
-import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
+import { Client, LocalAuth, MessageMedia, Message } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal'
 import { redirect } from '@sveltejs/kit';
 
@@ -18,25 +18,27 @@ export const actions = {
                 headless: true
             }
         });
+        
+        if (!client.pupPage) {
+            client.initialize();
 
-        client.initialize();
+            client.on('loading_screen', (percent, message) => {
+                console.log('LOADING SCREEN', percent, message);
+            });
 
-        client.on('loading_screen', (percent, message) => {
-            console.log('LOADING SCREEN', percent, message);
-        });
+            client.on('qr', (qr) => {
+                qrcode.generate(qr, { small: true });
+            });
 
-        client.on('qr', (qr) => {
-            qrcode.generate(qr, { small: true });
-        });
+            client.on('authenticated', () => {
+                console.log('AUTHENTICATED');
+            });
 
-        client.on('authenticated', () => {
-            console.log('AUTHENTICATED');
-        });
-
-        client.on('auth_failure', msg => {
-            // Fired if session restore was unsuccessful
-            console.error('AUTHENTICATION FAILURE', msg);
-        });
+            client.on('auth_failure', msg => {
+                // Fired if session restore was unsuccessful
+                console.error('AUTHENTICATION FAILURE', msg);
+            });
+        }
 
 
 
@@ -61,18 +63,25 @@ export const actions = {
                 const chatId = item.A.toString().substring(0) + "@c.us";
                 if (img.size > 0) {
                     const media = MessageMedia.fromFilePath('./files/temp.png');
-                    client.sendMessage(chatId, media, {caption: msg});
+                    client.sendMessage(chatId, media, { caption: msg });
                 } else {
                     client.sendMessage(chatId, msg);
                 }
             });
             fs.unlink(`./files/${fileName}.xls`, (err) => {
                 if (err) throw err //handle your error the way you want to;
-                console.log('path/file.txt was deleted');//or else the file will be deleted
+                // console.log('path/file.txt was deleted');//or else the file will be deleted
             });
         });
 
+        client.on('message_ack', (msg, ack) => {
+            if(ack == 3) {
+                client.destroy()
+                console.log('sukses')
+            }
+        })
 
+asd
         return { success: true };
     }
 };
