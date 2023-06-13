@@ -18,27 +18,25 @@ export const actions = {
                 headless: true
             }
         });
-        
-        if (!client.pupPage) {
-            client.initialize();
 
-            client.on('loading_screen', (percent, message) => {
-                console.log('LOADING SCREEN', percent, message);
-            });
+        client.initialize();
 
-            client.on('qr', (qr) => {
-                qrcode.generate(qr, { small: true });
-            });
+        client.on('loading_screen', (percent, message) => {
+            console.log('LOADING SCREEN', percent, message);
+        });
 
-            client.on('authenticated', () => {
-                console.log('AUTHENTICATED');
-            });
+        client.on('qr', (qr) => {
+            qrcode.generate(qr, { small: true });
+        });
 
-            client.on('auth_failure', msg => {
-                // Fired if session restore was unsuccessful
-                console.error('AUTHENTICATION FAILURE', msg);
-            });
-        }
+        client.on('authenticated', () => {
+            console.log('AUTHENTICATED');
+        });
+
+        client.on('auth_failure', msg => {
+            // Fired if session restore was unsuccessful
+            console.error('AUTHENTICATION FAILURE', msg);
+        });
 
 
 
@@ -57,15 +55,27 @@ export const actions = {
             sourceFile: `./files/${fileName}.xls`
         });
 
+        var counter = 0;
+
         client.on('ready', () => {
             console.log('Client is ready!');
-            json.Sheet1.forEach((item, index) => {
+            json.Sheet1.forEach(async (item, index) => {
                 const chatId = item.A.toString().substring(0) + "@c.us";
-                if (img.size > 0) {
-                    const media = MessageMedia.fromFilePath('./files/temp.png');
-                    client.sendMessage(chatId, media, { caption: msg });
-                } else {
-                    client.sendMessage(chatId, msg);
+                const number_details = await client.getNumberId(item.A.toString());
+                console.log(number_details)
+                if (number_details) {
+                    if (img.size > 0) {
+                        const media = MessageMedia.fromFilePath('./files/temp.png');
+                        client.sendMessage(chatId, media, { caption: msg });
+                        counter++;
+                    } else {
+                        client.sendMessage(chatId, msg);
+                        counter++;
+                    }
+                }
+                else {
+                    counter++;
+                    console.log('invalid number')
                 }
             });
             fs.unlink(`./files/${fileName}.xls`, (err) => {
@@ -75,13 +85,14 @@ export const actions = {
         });
 
         client.on('message_ack', (msg, ack) => {
-            if(ack == 3) {
-                client.destroy()
-                console.log('sukses')
+            if (ack == 3) {
+                if (counter == json.Sheet1.length) {
+                    client.destroy()
+                    counter = 0;
+                    console.log('sukses')
+                }
             }
         })
-
-asd
         return { success: true };
     }
 };
