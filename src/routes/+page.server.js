@@ -15,7 +15,7 @@ export const actions = {
             // proxyAuthentication: { username: 'username', password: 'password' },
             puppeteer: {
                 // args: ['--proxy-server=proxy-server-that-requires-authentication.example.com'],
-                headless: true
+                headless: false
             }
         });
 
@@ -50,6 +50,7 @@ export const actions = {
         console.log(img.size)
         await writeFile(`./files/${fileName}.xls`, file.stream());
         await writeFile(`./files/${fileName}.png`, img.stream());
+        const regex = /^62\d+$/;
 
         const json = excelToJson({
             sourceFile: `./files/${fileName}.xls`
@@ -57,42 +58,49 @@ export const actions = {
 
         var counter = 0;
 
+
+
         client.on('ready', () => {
             console.log('Client is ready!');
             json.Sheet1.forEach(async (item, index) => {
-                const chatId = item.A.toString().substring(0) + "@c.us";
-                const number_details = await client.getNumberId(item.A.toString());
-                console.log(number_details)
-                if (number_details) {
-                    if (img.size > 0) {
-                        const media = MessageMedia.fromFilePath('./files/temp.png');
-                        client.sendMessage(chatId, media, { caption: msg });
+                // const chatId = item.A.toString().substring(0) + "@c.us";
+                // console.log(item)
+                if (regex.test(item.A.toString())) {
+                    const number_details = await client.getNumberId(item.A.toString());
+                    if (number_details) {
+                        if (img.size > 0) {
+                            const media = MessageMedia.fromFilePath('./files/temp.png');
+                            // console.log(number_details)
+                            client.sendMessage(number_details._serialized, media, { caption: msg });
+                            counter++;
+                        } else {
+                            // console.log(number_details._serialized)
+                            client.sendMessage(number_details._serialized, msg);
+                            counter++;
+                        }
+                    }
+                    else {
                         counter++;
-                    } else {
-                        client.sendMessage(chatId, msg);
-                        counter++;
+                        // console.log('invalid number')
                     }
                 }
-                else {
-                    counter++;
-                    console.log('invalid number')
-                }
-            });
-            fs.unlink(`./files/${fileName}.xls`, (err) => {
-                if (err) throw err //handle your error the way you want to;
-                // console.log('path/file.txt was deleted');//or else the file will be deleted
-            });
-        });
 
-        client.on('message_ack', (msg, ack) => {
-            if (ack == 3) {
-                if (counter == json.Sheet1.length) {
-                    client.destroy()
-                    counter = 0;
-                    console.log('sukses')
-                }
-            }
-        })
-        return { success: true };
+        });
+        fs.unlink(`./files/${fileName}.xls`, (err) => {
+            if (err) throw err //handle your error the way you want to;
+            // console.log('path/file.txt was deleted');//or else the file will be deleted
+        });
+    });
+
+client.on('message_ack', (msg, ack) => {
+    if (ack == 2) {
+        if (counter == json.Sheet1.length) {
+            client.destroy()
+            counter = 0;
+            console.log('sukses')
+        }
+    }
+})
+return { success: true };
     }
 };

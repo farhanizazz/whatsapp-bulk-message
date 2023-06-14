@@ -26,7 +26,7 @@
 	<br />
 	<br />
 	<label for="msg">Pesan<br/></label>
-	<textarea id="msg" bind:value={text} name='msg' required/>
+	<textarea id="msg" bind:value={text} name='msg' />
 	<br />
 	<br />
 	<button type="submit"> Kirim </button>
